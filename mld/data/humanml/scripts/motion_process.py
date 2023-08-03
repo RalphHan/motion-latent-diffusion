@@ -397,28 +397,27 @@ def recover_from_rot(data, joints_num, skeleton):
 
     return positions
 
+
 def recover_rot(data):
     # dataset [bs, seqlen, 263/251] HumanML/KIT
     joints_num = 22 if data.shape[-1] == 263 else 21
-    r_rot_quat, r_pos = recover_root_rot_pos(data)
-    r_pos_pad = torch.cat([r_pos, torch.zeros_like(r_pos)], dim=-1).unsqueeze(-2)
-    r_rot_cont6d = quaternion_to_cont6d(r_rot_quat)
+    r_rot_quat, r_pos = recover_root_rot_pos(data)  # (bs, seqlen, 4), (bs, seqlen, 3)
+    r_rot_cont6d = quaternion_to_cont6d(r_rot_quat)  # (bs, seqlen, 6)
     start_indx = 1 + 2 + 1 + (joints_num - 1) * 3
     end_indx = start_indx + (joints_num - 1) * 6
-    cont6d_params = data[..., start_indx:end_indx]
-    cont6d_params = torch.cat([r_rot_cont6d, cont6d_params], dim=-1)
-    cont6d_params = cont6d_params.view(-1, joints_num, 6)
-    cont6d_params = torch.cat([cont6d_params, r_pos_pad], dim=-2)
-    return cont6d_params
+    cont6d_params = data[..., start_indx:end_indx]  # (bs, seqlen, (joints_num - 1) * 6)
+    cont6d_params = torch.cat([r_rot_cont6d, cont6d_params], dim=-1)  # (bs, seqlen, joints_num * 6)
+    cont6d_params = cont6d_params.view(cont6d_params.shape[:-1] + (joints_num, 6))  # (bs, seqlen, joints_num, 6)
+    return cont6d_params, r_pos
 
 
 def recover_from_ric(data, joints_num):
-    r_rot_quat, r_pos = recover_root_rot_pos(data)
-    positions = data[..., 4:(joints_num - 1) * 3 + 4]
-    positions = positions.view(positions.shape[:-1] + (-1, 3))
+    r_rot_quat, r_pos = recover_root_rot_pos(data)# (bs, seqlen, 4), (bs, seqlen, 3)
+    positions = data[..., 4:(joints_num - 1) * 3 + 4] # (bs, seqlen, (joints_num - 1) * 3)
+    positions = positions.view(positions.shape[:-1] + (-1, 3))# (bs, seqlen, joints_num - 1, 3)
 
     '''Add Y-axis rotation to local joints'''
-    positions = qrot(qinv(r_rot_quat[..., None, :]).expand(positions.shape[:-1] + (4,)), positions)
+    positions = qrot(qinv(r_rot_quat[..., None, :]).expand(positions.shape[:-1] + (4,)), positions)# (bs, seqlen, joints_num - 1, 3)
 
     '''Add root XZ to joints'''
     positions[..., 0] += r_pos[..., 0:1]

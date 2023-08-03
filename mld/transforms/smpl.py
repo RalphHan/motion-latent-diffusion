@@ -222,10 +222,10 @@ class SMPL(_SMPLLayer):
         with contextlib.redirect_stdout(None):
             super(SMPL, self).__init__(**kwargs)
 
-        J_regressor_extra = np.load(J_path)
-        self.register_buffer(
-            'J_regressor_extra',
-            torch.tensor(J_regressor_extra, dtype=torch.float32))
+        # J_regressor_extra = np.load(J_path)
+        # self.register_buffer(
+        #     'J_regressor_extra',
+        #     torch.tensor(J_regressor_extra, dtype=torch.float32))
         vibe_indexes = np.array([JOINT_MAP[i] for i in JOINT_NAMES])
         a2m_indexes = vibe_indexes[action2motion_joints]
         smpl_indexes = np.arange(24)
@@ -241,13 +241,13 @@ class SMPL(_SMPLLayer):
     def forward(self, *args, **kwargs):
         smpl_output = super(SMPL, self).forward(*args, **kwargs)
 
-        extra_joints = vertices2joints(self.J_regressor_extra,
-                                       smpl_output.vertices)
-        all_joints = torch.cat([smpl_output.joints, extra_joints], dim=1)
+        # extra_joints = vertices2joints(self.J_regressor_extra,
+        #                                smpl_output.vertices)
+        all_joints = smpl_output.joints#torch.cat([smpl_output.joints, extra_joints], dim=1)
 
         output = {"vertices": smpl_output.vertices}
 
-        for joinstype, indexes in self.maps.items():
-            output[joinstype] = all_joints[:, indexes]
+        # for joinstype, indexes in self.maps.items():
+        #     output[joinstype] = all_joints[:, indexes]
 
         return output

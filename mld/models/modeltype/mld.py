@@ -115,6 +115,8 @@ class MLD(BaseModel):
         self.do_classifier_free_guidance = self.guidance_scale > 1.0
         if self.condition in ['text', 'text_uncond']:
             self.feats2joints = datamodule.feats2joints
+            if hasattr(datamodule, 'feats2quaternion'):
+                self.feats2quaternion = datamodule.feats2quaternion
         elif self.condition == 'action':
             self.rot2xyz = Rotation2xyz(smpl_path=cfg.DATASET.SMPL_PATH)
             self.feats2joints_eval = lambda sample, mask: self.rot2xyz(
@@ -213,7 +215,7 @@ class MLD(BaseModel):
         z = z.unsqueeze(0)
         return z
 
-    def forward(self, batch):
+    def forward(self, batch, return_quaternion=False):
         texts = batch["text"]
         lengths = batch["length"]
         if self.cfg.TEST.COUNT_TIME:
@@ -261,8 +263,14 @@ class MLD(BaseModel):
                     for line in self.times:
                         f.write(str(line))
                         f.write('\n')
-        joints = self.feats2joints(feats_rst.detach().cpu())
-        return remove_padding(joints, lengths)
+        feats_rst = feats_rst.detach().cpu()
+        joints = remove_padding(self.feats2joints(feats_rst),lengths)
+        if return_quaternion:
+            quaternion, r_pos = self.feats2quaternion(feats_rst)
+            quaternion = remove_padding(quaternion, lengths)
+            r_pos = remove_padding(r_pos, lengths)
+            return joints, quaternion, r_pos
+        return joints
 
     def gen_from_latent(self, batch):
         z = batch["latent"]

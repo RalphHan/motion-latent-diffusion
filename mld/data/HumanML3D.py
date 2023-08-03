@@ -2,8 +2,9 @@ import numpy as np
 import torch
 
 from mld.data.humanml.scripts.motion_process import (process_file,
-                                                     recover_from_ric)
-
+                                                     recover_from_ric,
+                                                     recover_rot)
+import mld.utils.rotation_conversions as geometry
 from .base import BASEDataModule
 from .humanml.data.dataset import Text2MotionDatasetV2, TextOnlyDataset
 
@@ -37,6 +38,14 @@ class HumanML3DDataModule(BASEDataModule):
         # Get additional info of the dataset
         self.nfeats = self._sample_set.nfeats
         # self.transforms = self._sample_set.transforms
+
+    def feats2quaternion(self, features):
+        mean = torch.tensor(self.hparams.mean).to(features)
+        std = torch.tensor(self.hparams.std).to(features)
+        features = features * std + mean
+        cont6d_params, r_pos = recover_rot(features)
+        quaternion = geometry.matrix_to_quaternion(geometry.rotation_6d_to_matrix(cont6d_params))
+        return quaternion, r_pos
 
     def feats2joints(self, features):
         mean = torch.tensor(self.hparams.mean).to(features)

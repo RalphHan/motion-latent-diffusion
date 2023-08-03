@@ -23,8 +23,8 @@ def setup_renderer(denoising=True, oldrender=True, accelerator="gpu", device=[0]
     if denoising:
         bpy.context.scene.cycles.use_denoising = True
 
-    bpy.context.scene.render.tile_x = 256
-    bpy.context.scene.render.tile_y = 256
+    # bpy.context.scene.render.tile_x = 256
+    # bpy.context.scene.render.tile_y = 256
     bpy.context.scene.cycles.samples = 64
     # bpy.context.scene.cycles.denoiser = 'OPTIX'
 

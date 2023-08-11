@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import sys
 import torch
-
+import binascii
+import numpy as np
 from mld.config import parse_args
 from mld.data.get_data import get_datasets
 from mld.models.get_model import get_model
@@ -52,7 +53,8 @@ async def function(prompt: str):
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)
     joints = joints[0].numpy()
-    return {"positions": joints.flatten().tolist(),
+    return {"positions": binascii.b2a_base64(joints.flatten().astype(np.float32).tobytes()).decode("utf-8"),
+            "dtype": "float32",
             "fps": fps,
             "mode": "xyz",
             "n_frames": joints.shape[0],

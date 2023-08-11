@@ -4,7 +4,7 @@ import json
 from vis import skeleton_render
 import numpy as np
 import requests
-
+import binascii
 from mld.data.humanml.utils.plot_script import plot_3d_motion
 
 
@@ -13,8 +13,8 @@ def action(render, prompt):
     fps = 20
     video_name = f"results/gradio/{the_uuid}.mp4"
     json_name = f"results/gradio/{the_uuid}.json"
-    ret_json=json.loads(requests.get("http://0.0.0.0:8019/mld/",params={"prompt":prompt}).text)
-    joints = np.float32(ret_json["positions"]).reshape(-1, 22, 3)
+    ret_json = json.loads(requests.get("http://0.0.0.0:8019/mld/", params={"prompt": prompt}).text)
+    joints = np.frombuffer(binascii.a2b_base64(ret_json["positions"]), dtype=ret_json["dtype"]).reshape(-1, 22, 3)
     with open(json_name, "w") as f:
         json.dump(ret_json, f, indent=4)
     if render != "none":

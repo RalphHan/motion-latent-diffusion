@@ -9,6 +9,8 @@ from mld.config import parse_args
 from mld.data.get_data import get_datasets
 from mld.models.get_model import get_model
 from mld.utils.logger import create_logger
+from ik.ik import ik
+
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
@@ -46,7 +48,7 @@ def init_data():
     return data
 
 
-@app.get("/mld/")
+@app.get("/mld_pos/")
 async def function(prompt: str):
     fps = 20
     with torch.no_grad():
@@ -57,5 +59,23 @@ async def function(prompt: str):
             "dtype": "float32",
             "fps": fps,
             "mode": "xyz",
+            "n_frames": joints.shape[0],
+            "n_joints": 22}
+
+
+@app.get("/mld_quat/")
+async def function(prompt: str, rm_y: bool = True):
+    fps = 20
+    with torch.no_grad():
+        batch = {"length": [100], "text": [prompt]}
+        joints = data["model"](batch)
+    joints = joints[0].numpy()
+    quat, root_pos = ik(joints, rm_y)
+    return {"root_positions": binascii.b2a_base64(
+        root_pos.flatten().astype(np.float32).tobytes()).decode("utf-8"),
+            "rotations": binascii.b2a_base64(quat.flatten().astype(np.float32).tobytes()).decode("utf-8"),
+            "dtype": "float32",
+            "fps": fps,
+            "mode": "quaternion",
             "n_frames": joints.shape[0],
             "n_joints": 22}

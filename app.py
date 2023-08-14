@@ -13,7 +13,7 @@ def action(render, prompt):
     fps = 20
     video_name = f"results/gradio/{the_uuid}.mp4"
     json_name = f"results/gradio/{the_uuid}.json"
-    ret_json = json.loads(requests.get("http://0.0.0.0:8019/mld/", params={"prompt": prompt}).text)
+    ret_json = json.loads(requests.get("http://0.0.0.0:8019/mld_pos/", params={"prompt": prompt}).text)
     joints = np.frombuffer(binascii.a2b_base64(ret_json["positions"]), dtype=ret_json["dtype"]).reshape(-1, 22, 3)
     with open(json_name, "w") as f:
         json.dump(ret_json, f, indent=4)

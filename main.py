@@ -64,13 +64,13 @@ async def function(prompt: str):
 
 
 @app.get("/mld_quat/")
-async def function(prompt: str, rm_y: bool = True):
+async def function(prompt: str):
     fps = 20
     with torch.no_grad():
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)
     joints = joints[0].numpy()
-    quat, root_pos = ik(joints, rm_y)
+    quat, root_pos = ik(joints)
     return {"root_positions": binascii.b2a_base64(
         root_pos.flatten().astype(np.float32).tobytes()).decode("utf-8"),
             "rotations": binascii.b2a_base64(quat.flatten().astype(np.float32).tobytes()).decode("utf-8"),

@@ -50,14 +50,6 @@ parents = [
 ]
 
 
-def remove_y(quat):
-    euler = qeuler_np(quat, 'yxz')
-    euler[..., 0] = 0
-    euler = euler[..., [1, 0, 2]]
-    quat = euler_to_quaternion(euler, 'xyz')
-    return quat
-
-
 def get_rotation_naive(sons, joints):
     ret = np.zeros(joints.shape[:-2] + (4,))
     for j in sons[1:]:
@@ -70,7 +62,7 @@ def get_rotation_naive(sons, joints):
     return ret
 
 
-def ik(joints, rm_y=True):
+def ik(joints):
     roots = []
     sons = [[0, 1, 2, 3], [9, 12, 13, 14]]
     for i in range(len(sons)):
@@ -92,10 +84,7 @@ def ik(joints, rm_y=True):
             v = joints[:, chain[j + 1]] - joints[:, chain[j]]
             v = v / np.sqrt((v ** 2).sum(axis=-1))[:, np.newaxis]
             rot_u_v = qbetween_np(u, v)
-            if rm_y:
-                quat_params[:, chain[j]] = remove_y(qmul_np(qinv_np(R), rot_u_v))
-            else:
-                quat_params[:, chain[j]] = qmul_np(qinv_np(R), rot_u_v)
+            quat_params[:, chain[j]] = qmul_np(qinv_np(R), rot_u_v)
             R = qmul_np(R, quat_params[:, chain[j]])
 
     return quat_params, joints[..., 0, :]
@@ -154,14 +143,12 @@ def fk(rotations, root_positions):
 if __name__ == '__main__':
     import json
     import binascii
-
-    rm_y = True
     with open("playground/f5ebdd69-6bc5-493b-b808-72ef24b72916.json") as f:
         data = json.load(f)
     joints = np.frombuffer(binascii.a2b_base64(data["positions"]), dtype=data["dtype"]).reshape(data["n_frames"],
                                                                                                 data["n_joints"], 3)
-    quat, root_pos = ik(joints, rm_y=rm_y)
-    with open(f"playground/{'remove_y' if rm_y else 'keep_y'}.json", "w") as f:
+    quat, root_pos = ik(joints)
+    with open(f"playground/angle.json", "w") as f:
         json.dump({"root_positions": binascii.b2a_base64(
             root_pos.flatten().astype(np.float32).tobytes()).decode("utf-8"),
                    "rotations": binascii.b2a_base64(quat.flatten().astype(np.float32).tobytes()).decode("utf-8"),
@@ -175,5 +162,5 @@ if __name__ == '__main__':
     from mld.data.humanml.utils.plot_script import plot_3d_motion
 
     plot_3d_motion("playground/joints.mp4", joints * 1.3, radius=3, title="", fps=data["fps"])
-    plot_3d_motion(f"playground/new_{'remove_y' if rm_y else 'keep_y'}_joints.mp4", new_joints * 1.3, radius=3,
+    plot_3d_motion(f"playground/new_joints.mp4", new_joints * 1.3, radius=3,
                    title="", fps=data["fps"])

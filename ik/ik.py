@@ -63,7 +63,8 @@ def get_rotation_naive(sons, weights, joints):
 
 def get_rotation(sons, weights, joints):
     num_iters = 50
-    rotation = torch.tensor(get_rotation_naive(sons, weights, joints), requires_grad=True, device='cpu',
+    rotation = torch.tensor(get_rotation_naive(sons, weights, joints), requires_grad=True,
+                            device='cuda' if torch.cuda.is_available() else 'cpu',
                             dtype=torch.float32)
     optim = torch.optim.LBFGS([rotation], lr=1e-2, max_iter=num_iters, line_search_fn='strong_wolfe')
     for i in range(num_iters):

@@ -81,9 +81,10 @@ def ik(joints):
                 continue
             if chain[j] == 9: continue
             u = offsets[chain[j + 1]][np.newaxis, ...].repeat(len(joints), axis=0)
+            u_=qrot_np(roots[0] if chain[j]<12 else roots[1], u)
             v = joints[:, chain[j + 1]] - joints[:, chain[j]]
             v = v / np.sqrt((v ** 2).sum(axis=-1))[:, np.newaxis]
-            rot_u_v = qbetween_np(u, v)
+            rot_u_v = qmul_np(roots[0] if chain[j]<12 else roots[1], qbetween_np(u_, v))
             quat_params[:, chain[j]] = qmul_np(qinv_np(R), rot_u_v)
             R = qmul_np(R, quat_params[:, chain[j]])
 

@@ -1,27 +1,28 @@
 from .quaternion import *
+import scipy.ndimage.filters as filters
 
-offsets = np.array([[0, 0, 0],
-                    [0.7071, -0.7071, 0],
-                    [-0.7071, -0.7071, 0],
-                    [0, 1, 0],
-                    [0, -1, 0],
-                    [0, -1, 0],
-                    [0, 1, 0],
-                    [0, -1, 0],
-                    [0, -1, 0],
-                    [0, 1, 0],
-                    [0, 0, 1],
-                    [0, 0, 1],
-                    [0, 1, 0],
-                    [0.7071, 0.7071, 0],
-                    [-0.7071, 0.7071, 0],
-                    [0, 0, 1],
-                    [0, -1, 0],
-                    [0, -1, 0],
-                    [0, -1, 0],
-                    [0, -1, 0],
-                    [0, -1, 0],
-                    [0, -1, 0]])
+default_offsets = np.array([[0, 0, 0],
+                            [1, 0, 0],
+                            [1, 0, 0],
+                            [0, 1, 0],
+                            [0, -1, 0],
+                            [0, -1, 0],
+                            [0, 1, 0],
+                            [0, -1, 0],
+                            [0, -1, 0],
+                            [0, 1, 0],
+                            [0, 0, 1],
+                            [0, 0, 1],
+                            [0, 1, 0],
+                            [1, 0, 0],
+                            [-1, 0, 0],
+                            [0, 0, 1],
+                            [0, -1, 0],
+                            [0, -1, 0],
+                            [0, -1, 0],
+                            [0, -1, 0],
+                            [0, -1, 0],
+                            [0, -1, 0]])
 
 tree = [[0, 2, 5, 8, 11], [0, 1, 4, 7, 10], [0, 3, 6, 9, 12, 15], [9, 14, 17, 19, 21], [9, 13, 16, 18, 20]]
 parents = [
@@ -50,7 +51,7 @@ parents = [
 ]
 
 
-def get_rotation_naive(sons, weights, joints):
+def get_rotation_naive(sons, weights, joints, offsets):
     ret = np.zeros(joints.shape[:-2] + (4,))
     for j, w in zip(sons[1:], weights[1:]):
         u = offsets[j][np.newaxis, ...].repeat(len(joints), axis=0)
@@ -61,9 +62,9 @@ def get_rotation_naive(sons, weights, joints):
     return ret
 
 
-def get_rotation(sons, weights, joints):
-    num_iters = 50
-    rotation = torch.tensor(get_rotation_naive(sons, weights, joints), requires_grad=True,
+def get_rotation(sons, weights, joints, offsets):
+    num_iters = 10
+    rotation = torch.tensor(get_rotation_naive(sons, weights, joints, offsets), requires_grad=True,
                             device='cuda' if torch.cuda.is_available() else 'cpu',
                             dtype=torch.float32)
     optim = torch.optim.LBFGS([rotation], lr=1e-2, max_iter=num_iters, line_search_fn='strong_wolfe')
@@ -86,12 +87,12 @@ def get_rotation(sons, weights, joints):
     return rotation
 
 
-def ik(joints):
+def ik(joints, offsets=default_offsets):
     roots = []
     sons = [[0, 1, 2, 3], [9, 12, 13, 14]]
-    weights = [[0, 1, 1, 1], [0, 1, 1, 1]]
+    weights = [[0, 1, 1, 2], [0, 2, 1, 1]]
     for i in range(len(sons)):
-        roots.append(get_rotation_naive(sons[i], weights[i], joints))
+        roots.append(get_rotation(sons[i], weights[i], joints, offsets))
     quat_params = np.zeros(joints.shape[:-1] + (4,))
     quat_params[..., 0] = 1
     quat_params[:, 0] = roots[0]
@@ -111,11 +112,11 @@ def ik(joints):
             rot_u_v = qmul_np(roots[0] if chain[j] < 12 else roots[1], qbetween_np(u_, v))
             quat_params[:, chain[j]] = qmul_np(qinv_np(R), rot_u_v)
             R = qmul_np(R, quat_params[:, chain[j]])
-
+    quat_params = filters.gaussian_filter1d(quat_params, 2, axis=0, mode='nearest')
     return quat_params, joints[..., 0, :]
 
 
-def fk(rotations, root_positions):
+def fk(rotations, root_positions, offsets=default_offsets):
     rotations = torch.Tensor(rotations)
     root_positions = torch.Tensor(root_positions)
     _offsets = torch.Tensor(offsets)
@@ -165,6 +166,13 @@ def fk(rotations, root_positions):
     return torch.stack(positions_world, dim=1).numpy()
 
 
+def get_offset(first_frame):
+    new_offset = np.zeros_like(first_frame)
+    for i in range(1, len(parents)):
+        new_offset[i] = first_frame[i] - first_frame[parents[i]]
+    return new_offset
+
+
 if __name__ == '__main__':
     import json
     import binascii
@@ -173,7 +181,9 @@ if __name__ == '__main__':
         data = json.load(f)
     joints = np.frombuffer(binascii.a2b_base64(data["positions"]), dtype=data["dtype"]).reshape(data["n_frames"],
                                                                                                 data["n_joints"], 3)
-    quat, root_pos = ik(joints)
+    new_offset = get_offset(joints[0])
+    new_offset_norm = new_offset / (np.linalg.norm(new_offset, axis=-1, keepdims=True) + 1e-7)
+    quat, root_pos = ik(joints, new_offset_norm)
     with open(f"playground/angle.json", "w") as f:
         json.dump({"root_positions": binascii.b2a_base64(
             root_pos.flatten().astype(np.float32).tobytes()).decode("utf-8"),
@@ -184,7 +194,7 @@ if __name__ == '__main__':
                    "n_frames": data["n_frames"],
                    "n_joints": data["n_joints"]}, f, indent=4)
 
-    new_joints = fk(quat, root_pos)
+    new_joints = fk(quat, root_pos, new_offset)
     from mld.data.humanml.utils.plot_script import plot_3d_motion
 
     plot_3d_motion("playground/joints.mp4", joints * 1.3, radius=3, title="", fps=data["fps"])

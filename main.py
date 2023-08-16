@@ -64,16 +64,16 @@ async def function(prompt: str):
 
 
 @app.get("/mld_quat/")
-async def function(prompt: str, offset_fp32: str = None):
+async def function(prompt: str, normalized_offset_fp32: str = None):
     fps = 20
     with torch.no_grad():
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)
     joints = joints[0].numpy()
-    if offset_fp32 is None:
+    if normalized_offset_fp32 is None:
         quat, root_pos = ik(joints)
     else:
-        offset = np.frombuffer(binascii.a2b_base64(offset_fp32), dtype="float32").reshape(-1, 3)
+        offset = np.frombuffer(binascii.a2b_base64(normalized_offset_fp32), dtype="float32").reshape(-1, 3)
         quat, root_pos = ik(joints, offset)
 
     return {"root_positions": binascii.b2a_base64(

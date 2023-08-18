@@ -1,0 +1,52 @@
+import numpy as np
+import os
+import torch
+import h5py
+from .joints2smpl import config
+from .joints2smpl.my_smpl import MySMPL
+from .joints2smpl.smplify import SMPLify3D
+
+
+class Joints2SMPL:
+
+    def __init__(self, device):
+        self.device = torch.device(device)
+        self.num_joints = 22
+        self.joint_category = "AMASS"
+        self.fix_foot = False
+        model_path = os.path.join(config.SMPL_MODEL_DIR, "smpl")
+        smplmodel = MySMPL(model_path, gender="neutral", ext="pkl").to(self.device)
+        self.file = h5py.File(config.SMPL_MEAN_FILE, 'r')
+        self.smplify = SMPLify3D(smplxmodel=smplmodel,
+                                 joints_category=self.joint_category,
+                                 device=self.device)
+
+    def __call__(self, input_joints, step_size=1e-2, num_iters=150):
+        if isinstance(input_joints, np.ndarray):
+            input_joints = torch.from_numpy(input_joints)
+        n_frames= input_joints.size(0)
+        pred_pose = torch.from_numpy(self.file['pose'][:]).unsqueeze(0).repeat(n_frames, 1).float().to(
+            self.device)
+        pred_betas = torch.from_numpy(self.file['shape'][:]).unsqueeze(0).repeat(n_frames, 1).float().to(
+            self.device)
+        pred_cam_t = torch.Tensor([0.0, 0.0, 0.0]).unsqueeze(0).to(self.device)
+        keypoints_3d = input_joints.to(self.device).float()
+        confidence_input = torch.ones(self.num_joints)
+        if self.fix_foot:
+            confidence_input[7] = 1.5
+            confidence_input[8] = 1.5
+            confidence_input[10] = 1.5
+            confidence_input[11] = 1.5
+
+        pose, _, _ = self.smplify(
+            pred_pose.detach(),
+            pred_betas.detach(),
+            pred_cam_t.detach(),
+            keypoints_3d.detach(),
+            conf_3d=confidence_input.to(self.device),
+            step_size=1e-2,
+            num_iters=100
+        )
+        thetas = pose.reshape(n_frames, 24, 3)
+        root_loc = keypoints_3d[:, 0]
+        return thetas.cpu().numpy(), root_loc.cpu().numpy()

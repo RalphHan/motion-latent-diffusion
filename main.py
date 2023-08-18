@@ -62,32 +62,32 @@ async def mld_pos(prompt: str):
             "n_joints": 22}
 
 
-@app.get("/mld_quat/")
-async def mld_quat(prompt: str, normalized_offset_fp32: str = None):
-    fps = 20
-    with torch.no_grad():
-        batch = {"length": [100], "text": [prompt]}
-        joints = data["model"](batch)
-    joints = joints[0].numpy()
-    if normalized_offset_fp32 is None:
-        quat, root_pos = ik(joints)
-    else:
-        offset = np.frombuffer(binascii.a2b_base64(normalized_offset_fp32), dtype="float32").reshape(-1, 3)
-        quat, root_pos = ik(joints, offset)
-
-    return {"root_positions": binascii.b2a_base64(
-        root_pos.flatten().astype(np.float32).tobytes()).decode("utf-8"),
-            "rotations": binascii.b2a_base64(quat.flatten().astype(np.float32).tobytes()).decode("utf-8"),
-            "dtype": "float32",
-            "fps": fps,
-            "mode": "quaternion",
-            "n_frames": joints.shape[0],
-            "n_joints": 22}
+# @app.get("/mld_quat/")
+# async def mld_quat(prompt: str, normalized_offset_fp32: str = None):
+#     fps = 20
+#     with torch.no_grad():
+#         batch = {"length": [100], "text": [prompt]}
+#         joints = data["model"](batch)
+#     joints = joints[0].numpy()
+#     if normalized_offset_fp32 is None:
+#         quat, root_pos = ik(joints)
+#     else:
+#         offset = np.frombuffer(binascii.a2b_base64(normalized_offset_fp32), dtype="float32").reshape(-1, 3)
+#         quat, root_pos = ik(joints, offset)
+#
+#     return {"root_positions": binascii.b2a_base64(
+#         root_pos.flatten().astype(np.float32).tobytes()).decode("utf-8"),
+#             "rotations": binascii.b2a_base64(quat.flatten().astype(np.float32).tobytes()).decode("utf-8"),
+#             "dtype": "float32",
+#             "fps": fps,
+#             "mode": "quaternion",
+#             "n_frames": joints.shape[0],
+#             "n_joints": 22}
 
 
 @app.get("/mld_angle/")
 async def mld_angle(prompt: str, step_size: float = 1e-2, num_iters: int = 150):
-    assert 0<=num_iters<=5000
+    assert 0<=num_iters<=1000
     fps = 20
     with torch.no_grad():
         batch = {"length": [100], "text": [prompt]}

@@ -87,6 +87,7 @@ async def mld_quat(prompt: str, normalized_offset_fp32: str = None):
 
 @app.get("/mld_angle/")
 async def mld_angle(prompt: str, step_size: float = 1e-2, num_iters: int = 150):
+    assert 0<=num_iters<=5000
     fps = 20
     with torch.no_grad():
         batch = {"length": [100], "text": [prompt]}

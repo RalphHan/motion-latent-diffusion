@@ -44,8 +44,8 @@ class Joints2SMPL:
             pred_cam_t.detach(),
             keypoints_3d.detach(),
             conf_3d=confidence_input.to(self.device),
-            step_size=1e-2,
-            num_iters=100
+            step_size=step_size,
+            num_iters=num_iters
         )
         thetas = pose.reshape(n_frames, 24, 3)
         root_loc = keypoints_3d[:, 0]

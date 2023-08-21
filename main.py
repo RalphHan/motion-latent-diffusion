@@ -55,6 +55,15 @@ def init_data():
 @app.get("/mld_pos/")
 async def mld_pos(prompt: str):
     fps = 20
+    try:
+        prompt = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "system",
+                       "content": "translate to english without any explanation. If it's already in english, just repeat it."},
+                      {"role": "user", "content": prompt}],
+        )["choices"][0]["message"]["content"]
+    except:
+        pass
     with torch.no_grad():
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)

@@ -12,6 +12,7 @@ from mld.utils.logger import create_logger
 from ik.ik import ik
 from visualize import Joints2SMPL
 
+
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
@@ -86,14 +87,13 @@ async def mld_pos(prompt: str):
 
 
 @app.get("/mld_angle/")
-async def mld_angle(prompt: str, step_size: float = 1e-2, num_iters: int = 150):
-    assert 0<=num_iters<=1000
+async def mld_angle(prompt: str):
     fps = 20
     with torch.no_grad():
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)
     joints = joints[0].numpy()
-    rotations, root_pos = data["j2s"](joints, step_size=step_size, num_iters=num_iters)
+    rotations, root_pos = data["j2s"](joints, step_size=2e-2, num_iters=25, optimizer="lbfgs")
     return {"root_positions": binascii.b2a_base64(
         root_pos.flatten().astype(np.float32).tobytes()).decode("utf-8"),
             "rotations": binascii.b2a_base64(rotations.flatten().astype(np.float32).tobytes()).decode("utf-8"),

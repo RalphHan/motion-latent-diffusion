@@ -5,6 +5,8 @@ import h5py
 from .joints2smpl import config
 from .joints2smpl.my_smpl import MySMPL
 from .joints2smpl.smplify import SMPLify3D
+import scipy.ndimage.filters as filters
+import mld.utils.rotation_conversions as geometry
 
 
 class Joints2SMPL:
@@ -21,10 +23,10 @@ class Joints2SMPL:
                                  joints_category=self.joint_category,
                                  device=self.device)
 
-    def __call__(self, input_joints, step_size=1e-2, num_iters=150):
+    def __call__(self, input_joints, step_size=1e-2, num_iters=150, optimizer="adam"):
         if isinstance(input_joints, np.ndarray):
             input_joints = torch.from_numpy(input_joints)
-        n_frames= input_joints.size(0)
+        n_frames = input_joints.size(0)
         pred_pose = torch.from_numpy(self.file['pose'][:]).unsqueeze(0).repeat(n_frames, 1).float().to(
             self.device)
         pred_betas = torch.from_numpy(self.file['shape'][:]).unsqueeze(0).repeat(n_frames, 1).float().to(
@@ -45,8 +47,12 @@ class Joints2SMPL:
             keypoints_3d.detach(),
             conf_3d=confidence_input.to(self.device),
             step_size=step_size,
-            num_iters=num_iters
+            num_iters=num_iters,
+            optimizer=optimizer
         )
         thetas = pose.reshape(n_frames, 24, 3)
-        root_loc = keypoints_3d[:, 0]
-        return thetas.cpu().numpy(), root_loc.cpu().numpy()
+        thetas = geometry.matrix_to_rotation_6d(geometry.axis_angle_to_matrix(thetas)).cpu().numpy()
+        thetas = torch.tensor(filters.gaussian_filter1d(thetas, 1.5, axis=0, mode='nearest'))
+        thetas = geometry.matrix_to_axis_angle(geometry.rotation_6d_to_matrix(thetas)).numpy()
+        root_loc = keypoints_3d[:, 0].cpu().numpy()
+        return thetas, root_loc

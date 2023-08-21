@@ -106,7 +106,11 @@ async def mld_angle(prompt: str):
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)
     joints = joints[0].numpy()
-    rotations, root_pos = data["j2s"](joints, step_size=2e-2, num_iters=25, optimizer="lbfgs")
+    if ((joints[:, 1, 0] > joints[:, 2, 0]) & (joints[:, 13, 0] > joints[:, 14, 0]) & (
+            joints[:, 9, 1] > joints[:, 0, 1])).sum() / joints.shape[0] > 0.85:
+        rotations, root_pos = data["j2s"](joints, step_size=1e-2, num_iters=150, optimizer="adam")
+    else:
+        rotations, root_pos = data["j2s"](joints, step_size=2e-2, num_iters=25, optimizer="lbfgs")
     return {"root_positions": binascii.b2a_base64(
         root_pos.flatten().astype(np.float32).tobytes()).decode("utf-8"),
             "rotations": binascii.b2a_base64(rotations.flatten().astype(np.float32).tobytes()).decode("utf-8"),

@@ -3,7 +3,7 @@ import scipy.ndimage.filters as filters
 
 default_offsets = np.array([[0, 0, 0],
                             [1, 0, 0],
-                            [1, 0, 0],
+                            [-1, 0, 0],
                             [0, 1, 0],
                             [0, -1, 0],
                             [0, -1, 0],

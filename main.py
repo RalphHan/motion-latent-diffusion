@@ -1,6 +1,9 @@
+import dotenv
+dotenv.load_dotenv()
+import openai,os
+openai.api_key = os.getenv("OPENAI_API_KEY")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import os
 import sys
 import torch
 import binascii
@@ -89,6 +92,14 @@ async def mld_pos(prompt: str):
 @app.get("/mld_angle/")
 async def mld_angle(prompt: str):
     fps = 20
+    try:
+        prompt = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[{"role": "system", "content": "translate to english without any explanation"},
+                      {"role": "user", "content": prompt}],
+        )["choices"][0]["message"]["content"]
+    except:
+        pass
     with torch.no_grad():
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)

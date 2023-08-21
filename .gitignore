@@ -4,4 +4,5 @@ deps/
 __pycache__
 models/
 results/
+.env
 playground/

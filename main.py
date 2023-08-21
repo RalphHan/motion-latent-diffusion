@@ -1,6 +1,8 @@
 import dotenv
+
 dotenv.load_dotenv()
-import openai,os
+import openai, os
+
 openai.api_key = os.getenv("OPENAI_API_KEY")
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +16,6 @@ from mld.models.get_model import get_model
 from mld.utils.logger import create_logger
 from ik.ik import ik
 from visualize import Joints2SMPL
-
 
 app = FastAPI()
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"],
@@ -95,7 +96,8 @@ async def mld_angle(prompt: str):
     try:
         prompt = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[{"role": "system", "content": "translate to english without any explanation"},
+            messages=[{"role": "system",
+                       "content": "translate to english without any explanation. If it's already in english, just repeat it."},
                       {"role": "user", "content": prompt}],
         )["choices"][0]["message"]["content"]
     except:

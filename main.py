@@ -100,17 +100,18 @@ async def mld_pos(prompt: str):
 
 
 @app.get("/mld_angle/")
-async def mld_angle(prompt: str):
+async def mld_angle(prompt: str, do_translation: bool = True):
     fps = 20
-    try:
-        prompt = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[{"role": "system",
-                       "content": "translate to english without any explanation. If it's already in english, just repeat it."},
-                      {"role": "user", "content": prompt}],
-        )["choices"][0]["message"]["content"]
-    except:
-        pass
+    if do_translation:
+        try:
+            prompt = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[{"role": "system",
+                           "content": "translate to english without any explanation. If it's already in english, just repeat it."},
+                          {"role": "user", "content": prompt}],
+            )["choices"][0]["message"]["content"]
+        except:
+            pass
     with torch.no_grad():
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)

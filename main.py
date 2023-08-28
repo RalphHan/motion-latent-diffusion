@@ -116,6 +116,10 @@ async def mld_angle(prompt: str, do_translation: bool = True):
         batch = {"length": [100], "text": [prompt]}
         joints = data["model"](batch)
     joints = joints[0].numpy()
+    vec1 = np.cross(joints[:, 20] - joints[:, 15], joints[:, 21] - joints[:, 15])
+    vec2 = joints[:, 12] - joints[:, 15]
+    if ((vec1 * vec2).sum(-1) > 0).sum() / joints.shape[0] < 0.5:
+        joints[..., 0] = -joints[..., 0]
     if ((joints[:, 1, 0] > joints[:, 2, 0]) & (joints[:, 13, 0] > joints[:, 14, 0]) & (
             joints[:, 9, 1] > joints[:, 0, 1])).sum() / joints.shape[0] > 0.85:
         rotations, root_pos = data["j2s"](joints, step_size=1e-2, num_iters=150, optimizer="adam")

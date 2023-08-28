@@ -118,7 +118,8 @@ async def mld_angle(prompt: str, do_translation: bool = True):
     joints = joints[0].numpy()
     vec1 = np.cross(joints[:, 20] - joints[:, 15], joints[:, 21] - joints[:, 15])
     vec2 = joints[:, 12] - joints[:, 15]
-    if ((vec1 * vec2).sum(-1) > 0).sum() / joints.shape[0] < 0.5:
+    if (joints[:, 9, 1] > joints[:, 0, 1]).sum() / joints.shape[0] > 0.85 \
+            and ((vec1 * vec2).sum(-1) > 0).sum() / joints.shape[0] < 0.5:
         joints[..., 0] = -joints[..., 0]
     if ((joints[:, 1, 0] > joints[:, 2, 0]) & (joints[:, 13, 0] > joints[:, 14, 0]) & (
             joints[:, 9, 1] > joints[:, 0, 1])).sum() / joints.shape[0] > 0.85:

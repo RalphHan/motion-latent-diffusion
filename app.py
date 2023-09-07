@@ -8,12 +8,15 @@ import binascii
 from mld.data.humanml.utils.plot_script import plot_3d_motion
 
 
-def action(render, prompt):
+def action(render, translate, search, refine, prompt):
     the_uuid = str(uuid.uuid4())
     fps = 20
     video_name = f"results/gradio/{the_uuid}.mp4"
     json_name = f"results/gradio/{the_uuid}.json"
-    ret_json = json.loads(requests.get("http://0.0.0.0:8019/mld_pos/", params={"prompt": prompt}).text)
+    # ret_json = json.loads(requests.get("http://0.0.0.0:8019/mld_pos/", params={"prompt": prompt}).text)
+    ret_json = requests.get("http://0.0.0.0:8019/position/",
+                                       params={"prompt": prompt, "do_translation": translate, "do_search": search,
+                                               "do_refine": refine}).json()
     joints = np.frombuffer(binascii.a2b_base64(ret_json["positions"]), dtype=ret_json["dtype"]).reshape(-1, 22, 3)
     with open(json_name, "w") as f:
         json.dump(ret_json, f, indent=4)
@@ -32,6 +35,9 @@ if __name__ == "__main__":
     demo = gr.Interface(
         action,
         [gr.Dropdown(choices=["none", "relational", "absolute"], value="relational", label="render"),
+         gr.Checkbox(label="translate", value=True),
+         gr.Checkbox(label="search", value=True),
+         gr.Checkbox(label="refine", value=True),
          gr.Textbox("A person is skipping rope.")],
         [gr.Video(format="mp4", autoplay=True), gr.File()],
     )

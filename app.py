@@ -15,8 +15,8 @@ def action(render, translate, search, refine, prompt):
     json_name = f"results/gradio/{the_uuid}.json"
     # ret_json = json.loads(requests.get("http://0.0.0.0:8019/mld_pos/", params={"prompt": prompt}).text)
     ret_json = requests.get("http://0.0.0.0:8019/position/",
-                                       params={"prompt": prompt, "do_translation": translate, "do_search": search,
-                                               "do_refine": refine}).json()
+                            params={"prompt": prompt, "do_translation": translate, "do_search": search,
+                                    "do_refine": refine}).json()[0]
     joints = np.frombuffer(binascii.a2b_base64(ret_json["positions"]), dtype=ret_json["dtype"]).reshape(-1, 22, 3)
     with open(json_name, "w") as f:
         json.dump(ret_json, f, indent=4)

@@ -153,6 +153,7 @@ def skeleton_render(
     poses,
     video_name,
     contact=None,
+    fps=20,
 ):
     num_steps = poses.shape[0]
     fig = plt.figure()
@@ -185,7 +186,7 @@ def skeleton_render(
     anim = animation.FuncAnimation(
         fig,
         plot_single_pose,
-        range(0, num_steps, 20 // new_fps),
+        range(0, num_steps, fps // new_fps),
         fargs=(poses, lines, ax, axrange, scat, contact),
         interval=1000 // new_fps,
     )

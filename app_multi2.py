@@ -10,11 +10,11 @@ import torch
 import multiprocessing as mp
 
 
-def draw(render, joints, video_name, prompt, fps):
+def draw(render, mid, joints, video_name, prompt, fps):
     if render == "absolute":
         skeleton_render(joints[..., [2, 0, 1]], video_name, fps=fps)
     elif render == "relational":
-        plot_3d_motion(video_name, joints * 1.3, radius=3, title=prompt, fps=fps)
+        plot_3d_motion(video_name, joints * 1.3, radius=3, title=mid + ":" + prompt, fps=fps)
     else:
         raise ValueError(f"render {render} not supported")
 
@@ -32,8 +32,9 @@ def action(render, translate, dance, prompt):
         np.frombuffer(binascii.a2b_base64(ret_json["root_positions"]), dtype=ret_json["dtype"]).reshape(-1, 3)
         for ret_json in ret_jsons]
     processes = []
-    for rotations, root_pos, video_name, fps in zip(all_rotations, all_root_pos, video_names,
-                                                    [ret_json["fps"] for ret_json in ret_jsons]):
+    for mid, rotations, root_pos, video_name, fps in zip([ret_json["mid"] for ret_json in ret_jsons], all_rotations,
+                                                         all_root_pos, video_names,
+                                                         [ret_json["fps"] for ret_json in ret_jsons]):
         with torch.no_grad():
             pose = torch.tensor(rotations, dtype=torch.float32)
             smpl_output = smpl_model(global_orient=pose[:, :3],
@@ -41,7 +42,7 @@ def action(render, translate, dance, prompt):
                                      transl=torch.tensor(root_pos, dtype=torch.float32)
                                      )
             joints = smpl_output.joints.numpy()
-        p = mp.Process(target=draw, args=(render, joints, video_name, prompt, fps))
+        p = mp.Process(target=draw, args=(render, mid, joints, video_name, prompt, fps))
         processes.append(p)
         p.start()
     for p in processes:

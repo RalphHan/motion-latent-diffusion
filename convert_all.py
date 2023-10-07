@@ -1,12 +1,13 @@
+import setproctitle
+setproctitle.setproctitle("Convert")
 import os
-import uuid
 import numpy as np
-import requests
-import binascii
 from mld.data.humanml.utils.plot_script import plot_3d_motion
 from visualize.joints2smpl.my_smpl import MySMPL
 import torch
 import multiprocessing as mp
+import mld.utils.rotation_conversions as geometry
+from moviepy.editor import VideoFileClip, AudioFileClip
 
 n_workers=4
 def action(worker_id):
@@ -17,39 +18,21 @@ def action(worker_id):
     block_size = (len(files) + n_workers - 1) // n_workers
     start = worker_id * block_size
     end = start + block_size
-    motions = motions[start:end]
-
-    plot_3d_motion("tmp/", joints * 1.3, radius=3, title=mid + ":" + prompt, fps=fps)
-    the_uuid = str(uuid.uuid4())
-    video_names = [f"results/gradio/{the_uuid}-{i}.mp4" for i in range(4)]
-    ret_jsons = requests.get("http://34.123.39.219:6399/angle/",
-                             params={"prompt": prompt, "do_translation": translate, "is_dance": dance,
-                                     "is_random": random,
-                                     "want_number": 4}).json()
-    all_rotations = [
-        np.frombuffer(binascii.a2b_base64(ret_json["rotations"]), dtype=ret_json["dtype"]).reshape(-1, 24, 3)
-        for ret_json in ret_jsons]
-    all_root_pos = [
-        np.frombuffer(binascii.a2b_base64(ret_json["root_positions"]), dtype=ret_json["dtype"]).reshape(-1, 3)
-        for ret_json in ret_jsons]
-    processes = []
-    for mid, rotations, root_pos, video_name, fps in zip([ret_json["mid"] for ret_json in ret_jsons], all_rotations,
-                                                         all_root_pos, video_names,
-                                                         [ret_json["fps"] for ret_json in ret_jsons]):
-        with torch.no_grad():
-            pose = torch.tensor(rotations, dtype=torch.float32)
-            smpl_output = smpl_model(global_orient=pose[:, :3],
-                                     body_pose=pose[:, 3:],
-                                     transl=torch.tensor(root_pos, dtype=torch.float32)
-                                     )
-            joints = smpl_output.joints.numpy()
-        p = mp.Process(target=draw, args=(render, mid, joints, video_name, prompt, fps))
-        processes.append(p)
-        p.start()
-    for p in processes:
-        p.join()
-    return video_names
-
+    files = files[start:end]
+    for file in files:
+        quat=torch.tensor(np.load("tmp/rotations/" + file),dtype=torch.float32)
+        pose=geometry.quaternion_to_axis_angle(quat)
+        root_position=torch.tensor(np.load("tmp/root_positions/" + file),dtype=torch.float32)
+        smpl_output = smpl_model(global_orient=pose[:, :3],
+                                 body_pose=pose[:, 3:],
+                                 transl=root_position
+                                 )
+        joints = smpl_output.joints.numpy()
+        plot_3d_motion(f"tmp/video/{file.replace('.npy','.mp4')}", joints * 1.3, radius=3, title=file.strip(".npy"), fps=30)
+        video = VideoFileClip(f"tmp/video/{file.replace('.npy','.mp4')}")
+        audio = AudioFileClip(f"tmp/music/{file.replace('.npy','.wav')}")
+        video_with_audio = video.set_audio(audio)
+        video_with_audio.write_videofile(f"tmp/video_with_music/{file.replace('.npy','.mp4')}", audio_codec='aac')
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')
@@ -58,8 +41,6 @@ if __name__ == "__main__":
         p = mp.Process(target=action, args=(i,))
         processes.append(p)
         p.start()
-
     for p in processes:
         p.join()
-
     print("Done!")

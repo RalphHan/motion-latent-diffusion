@@ -20,14 +20,15 @@ def action(worker_id):
     end = start + block_size
     files = files[start:end]
     for file in files:
-        quat=torch.tensor(np.load("tmp/rotations/" + file),dtype=torch.float32)
-        pose=geometry.quaternion_to_axis_angle(quat)
-        root_position=torch.tensor(np.load("tmp/root_positions/" + file),dtype=torch.float32)
-        smpl_output = smpl_model(global_orient=pose[:, :3],
-                                 body_pose=pose[:, 3:],
-                                 transl=root_position
-                                 )
-        joints = smpl_output.joints.numpy()
+        with torch.no_grad():
+            quat=torch.tensor(np.load("tmp/rotations/" + file),dtype=torch.float32)
+            pose=geometry.quaternion_to_axis_angle(quat)
+            root_position=torch.tensor(np.load("tmp/root_positions/" + file),dtype=torch.float32)
+            smpl_output = smpl_model(global_orient=pose[:, :3],
+                                     body_pose=pose[:, 3:],
+                                     transl=root_position
+                                     )
+            joints = smpl_output.joints.numpy()
         plot_3d_motion(f"tmp/video/{file.replace('.npy','.mp4')}", joints * 1.3, radius=3, title=file.strip(".npy"), fps=30)
         video = VideoFileClip(f"tmp/video/{file.replace('.npy','.mp4')}")
         audio = AudioFileClip(f"tmp/music/{file.replace('.npy','.wav')}")

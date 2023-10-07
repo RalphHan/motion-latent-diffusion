@@ -22,7 +22,7 @@ def action(worker_id):
     for file in files:
         with torch.no_grad():
             quat=torch.tensor(np.load("tmp/rotations/" + file),dtype=torch.float32)
-            pose=geometry.quaternion_to_axis_angle(quat)
+            pose=geometry.quaternion_to_axis_angle(quat[...,[3,0,1,2]])
             root_position=torch.tensor(np.load("tmp/root_positions/" + file),dtype=torch.float32)
             smpl_output = smpl_model(global_orient=pose[:, :3],
                                      body_pose=pose[:, 3:],

@@ -1,4 +1,5 @@
 import setproctitle
+
 setproctitle.setproctitle("Convert")
 import os
 import numpy as np
@@ -8,32 +9,41 @@ import torch
 import multiprocessing as mp
 import mld.utils.rotation_conversions as geometry
 from moviepy.editor import VideoFileClip, AudioFileClip
+from vis import smpl_parents
+from ik.quaternion import qinv, qmul
 
-n_workers=4
+n_workers = 4
+
+
 def action(worker_id):
     os.makedirs("tmp/video", exist_ok=True)
     os.makedirs("tmp/video_with_music", exist_ok=True)
     smpl_model = MySMPL("deps/body_models/smpl", gender="neutral", ext="pkl")
-    files=sorted(os.listdir("tmp/rotations"))
+    files = sorted(os.listdir("tmp/rotations"))
     block_size = (len(files) + n_workers - 1) // n_workers
     start = worker_id * block_size
     end = start + block_size
     files = files[start:end]
     for file in files:
         with torch.no_grad():
-            quat=torch.tensor(np.load("tmp/rotations/" + file),dtype=torch.float32)
-            pose=geometry.quaternion_to_axis_angle(quat[...,[3,0,1,2]])
-            root_position=torch.tensor(np.load("tmp/root_positions/" + file),dtype=torch.float32)
+            quat = torch.tensor(np.load("tmp/rotations/" + file)[..., [3, 0, 1, 2]], dtype=torch.float32)
+            for i in range(23, -1, -1):
+                if i != 0:
+                    quat[:, i] = qmul(qinv(quat[:, smpl_parents[i]]), quat[:, i])
+            pose = geometry.quaternion_to_axis_angle(quat)
+            root_position = torch.tensor(np.load("tmp/root_positions/" + file), dtype=torch.float32)
             smpl_output = smpl_model(global_orient=pose[:, :3],
                                      body_pose=pose[:, 3:],
                                      transl=root_position
                                      )
             joints = smpl_output.joints.numpy()
-        plot_3d_motion(f"tmp/video/{file.replace('.npy','.mp4')}", joints * 1.3, radius=3, title=file.strip(".npy"), fps=30)
-        video = VideoFileClip(f"tmp/video/{file.replace('.npy','.mp4')}")
-        audio = AudioFileClip(f"tmp/music/{file.replace('.npy','.wav')}")
+        plot_3d_motion(f"tmp/video/{file.replace('.npy', '.mp4')}", joints * 1.3, radius=3, title=file.strip(".npy"),
+                       fps=30)
+        video = VideoFileClip(f"tmp/video/{file.replace('.npy', '.mp4')}")
+        audio = AudioFileClip(f"tmp/music/{file.replace('.npy', '.wav')}")
         video_with_audio = video.set_audio(audio)
-        video_with_audio.write_videofile(f"tmp/video_with_music/{file.replace('.npy','.mp4')}", audio_codec='aac')
+        video_with_audio.write_videofile(f"tmp/video_with_music/{file.replace('.npy', '.mp4')}", audio_codec='aac')
+
 
 if __name__ == "__main__":
     mp.set_start_method('spawn')

@@ -31,6 +31,7 @@ def action(worker_id):
                 if i != 0:
                     quat[:, i] = qmul(qinv(quat[:, smpl_parents[i]]), quat[:, i])
             pose = geometry.quaternion_to_axis_angle(quat)
+            pose[..., -1] *= -1
             root_position = torch.tensor(np.load("tmp/root_positions/" + file), dtype=torch.float32)
             smpl_output = smpl_model(global_orient=pose[:, :3],
                                      body_pose=pose[:, 3:],

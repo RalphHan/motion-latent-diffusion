@@ -22,10 +22,14 @@ def draw(render, mid, joints, video_name, prompt, fps):
 def action(render, translate, dance, random, prompt):
     the_uuid = str(uuid.uuid4())
     video_names = [f"results/gradio/{the_uuid}-{i}.mp4" for i in range(4)]
+    params = {"prompt": prompt, "do_translation": translate,
+              "want_number": 4}
+    if dance:
+        params["style"] = "dance"
+    if random:
+        params["regenerate"] = 1
     ret_jsons = requests.get("http://34.123.39.219:6399/angle/",
-                             params={"prompt": prompt, "do_translation": translate, "is_dance": dance,
-                                     "is_random": random,
-                                     "want_number": 4}).json()
+                             params=params).json()
     all_rotations = [
         np.frombuffer(binascii.a2b_base64(ret_json["rotations"]), dtype=ret_json["dtype"]).reshape(-1, 24, 3)
         for ret_json in ret_jsons]

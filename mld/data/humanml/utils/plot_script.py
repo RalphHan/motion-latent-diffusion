@@ -50,6 +50,7 @@ def plot_3d_motion(save_path, joints, title, figsize=(3, 3), fps=120, radius=3, 
         xz_plane = Poly3DCollection([verts])
         xz_plane.set_facecolor((0.8, 0.8, 0.8, 0.5))
         ax.add_collection3d(xz_plane)
+
     data = joints.copy().reshape(len(joints), -1, 3)
     fig = plt.figure(figsize=figsize)
     plt.tight_layout()
@@ -69,6 +70,7 @@ def plot_3d_motion(save_path, joints, title, figsize=(3, 3), fps=120, radius=3, 
 
     data[..., 0] -= data[:, 0:1, 0]
     data[..., 2] -= data[:, 0:1, 2]
+
     def update(index):
         ax.cla()
         ax.view_init(elev=120, azim=-90)
@@ -86,11 +88,13 @@ def plot_3d_motion(save_path, joints, title, figsize=(3, 3), fps=120, radius=3, 
         ax.set_xticklabels([])
         ax.set_yticklabels([])
         ax.set_zticklabels([])
+
     new_fps = 10
     ani = FuncAnimation(fig, update, frames=range(0, frame_number, fps // new_fps),
-                        interval=1000 / new_fps,repeat=False)
+                        interval=1000 / new_fps, repeat=False)
     ani.save(save_path, writer="ffmpeg")
     plt.close()
+
 
 def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
     matplotlib.use('Agg')
@@ -111,6 +115,7 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
 
     data = joints.copy().reshape(len(joints), -1, 3)
     fig = plt.figure(figsize=figsize)
+    fig.patch.set_facecolor("black")
     plt.tight_layout()
     ax = fig.add_subplot(projection="3d")
     init()
@@ -119,7 +124,7 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
               [0, 255, 85], [0, 255, 170], [0, 255, 255], [0, 170, 255], [0, 85, 255], [0, 0, 255], [85, 0, 255], \
               [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
 
-    mapping=np.int32([-1,15,9,17,19,21,16,18,20,2,5,8,1,4,7,-1,-1,-1,-1])
+    mapping = np.int32([-1, 15, 9, 17, 19, 21, 16, 18, 20, 2, 5, 8, 1, 4, 7, -1, -1, -1, -1])
     frame_number = data.shape[0]
 
     height_offset = MINS[1]
@@ -127,23 +132,28 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
 
     data[..., 0] -= data[:, 0:1, 0]
     data[..., 2] -= data[:, 0:1, 2]
+
     def update(index):
         ax.cla()
+        ax.set_facecolor("black")
         ax.view_init(elev=120, azim=-90)
         ax.dist = 7.5
         linewidth = 4.0
-        for index, color in zip(limbSeq, colors):
-            if np.any(mapping[index]==-1):
+        for my_index, color in zip(limbSeq, colors):
+            if np.any(mapping[my_index] == -1):
                 continue
-            ax.plot3D(data[index, mapping[index], 0], data[index, mapping[index], 1], data[index, mapping[index], 2], linewidth=linewidth,
-                      color=[int(float(c) * 0.6) for c in color])
-        ax.scatter3D(data[index, mapping[1:15], 0], data[index, mapping[1:15], 1], data[index, mapping[1:15], 2],color=colors[:14],marker=".")
+            ax.plot3D(data[index, mapping[my_index], 0], data[index, mapping[my_index], 1],
+                      data[index, mapping[my_index], 2], linewidth=linewidth,
+                      color="#{:02x}{:02x}{:02x}".format(*[int(float(c) * 0.6) for c in color]))
+        ax.scatter3D(data[index, mapping[1:15], 0], data[index, mapping[1:15], 1], data[index, mapping[1:15], 2],
+                     color=["#{:02x}{:02x}{:02x}".format(*color) for color in colors[:14]], marker=".",linewidths=4)
         plt.axis('off')
         ax.set_xticklabels([])
         ax.set_yticklabels([])
         ax.set_zticklabels([])
+
     new_fps = 10
     ani = FuncAnimation(fig, update, frames=range(0, frame_number, fps // new_fps),
-                        interval=1000 / new_fps,repeat=False)
+                        interval=1000 / new_fps, repeat=False)
     ani.save(save_path, writer="ffmpeg")
     plt.close()

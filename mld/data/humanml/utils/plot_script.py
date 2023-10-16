@@ -136,7 +136,7 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
     def update(index):
         ax.cla()
         ax.set_facecolor("black")
-        ax.view_init(elev=120, azim=-90)
+        ax.view_init(elev=90, azim=-90)
         ax.dist = 7.5
         linewidth = 4.0
         for my_index, color in zip(limbSeq, colors):

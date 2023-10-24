@@ -1,7 +1,7 @@
 import math
 # import cv2
 from textwrap import wrap
-
+import torch
 import matplotlib
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
@@ -51,6 +51,12 @@ def plot_3d_motion(save_path, joints, title, figsize=(3, 3), fps=120, radius=3, 
         xz_plane.set_facecolor((0.8, 0.8, 0.8, 0.5))
         ax.add_collection3d(xz_plane)
 
+    if fps != 10:
+        with torch.no_grad():
+            input_tensor = torch.tensor(joints, dtype=torch.float32).permute(1,2,0)
+            output_tensor = torch.nn.functional.interpolate(input_tensor, scale_factor=10/fps, mode='linear')
+            joints = output_tensor.permute(2,0,1).numpy()
+
     data = joints.copy().reshape(len(joints), -1, 3)
     fig = plt.figure(figsize=figsize)
     plt.tight_layout()
@@ -89,9 +95,8 @@ def plot_3d_motion(save_path, joints, title, figsize=(3, 3), fps=120, radius=3, 
         ax.set_yticklabels([])
         ax.set_zticklabels([])
 
-    new_fps = 10
-    ani = FuncAnimation(fig, update, frames=range(0, frame_number, fps // new_fps),
-                        interval=1000 / new_fps, repeat=False)
+    ani = FuncAnimation(fig, update, frames=frame_number,
+                        interval=1000 / 10, repeat=False)
     ani.save(save_path, writer="ffmpeg")
     plt.close()
 
@@ -112,6 +117,12 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
         [2, 1], [1, 15], [15, 17], [1, 16],
         [16, 18],
     ]
+
+    if fps != 10:
+        with torch.no_grad():
+            input_tensor = torch.tensor(joints, dtype=torch.float32).permute(1,2,0)
+            output_tensor = torch.nn.functional.interpolate(input_tensor, scale_factor=10/fps, mode='linear')
+            joints = output_tensor.permute(2,0,1).numpy()
 
     data = joints.copy().reshape(len(joints), -1, 3)
     fig = plt.figure(figsize=figsize)
@@ -152,8 +163,7 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
         ax.set_yticklabels([])
         ax.set_zticklabels([])
 
-    new_fps = 10
-    ani = FuncAnimation(fig, update, frames=range(0, frame_number, fps // new_fps),
-                        interval=1000 / new_fps, repeat=False)
+    ani = FuncAnimation(fig, update, frames=frame_number,
+                        interval=1000 / 10, repeat=False)
     ani.save(save_path, writer="ffmpeg")
     plt.close()

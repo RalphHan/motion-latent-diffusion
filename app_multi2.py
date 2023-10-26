@@ -1,3 +1,5 @@
+import setproctitle
+setproctitle.setproctitle("AMulti")
 import gradio as gr
 import uuid
 from vis import skeleton_render

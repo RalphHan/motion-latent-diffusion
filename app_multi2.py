@@ -31,7 +31,7 @@ def action(render, translate, dance, random, prompt):
     ret_jsons = requests.get("http://34.123.39.219:6399/angle/",
                              params=params).json()
     all_rotations = [
-        np.frombuffer(binascii.a2b_base64(ret_json["rotations"]), dtype=ret_json["dtype"]).reshape(-1, 24, 3)
+        np.frombuffer(binascii.a2b_base64(ret_json["rotations"]), dtype=ret_json["dtype"]).reshape(-1, 24*3)
         for ret_json in ret_jsons]
     all_root_pos = [
         np.frombuffer(binascii.a2b_base64(ret_json["root_positions"]), dtype=ret_json["dtype"]).reshape(-1, 3)

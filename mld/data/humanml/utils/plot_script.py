@@ -51,6 +51,7 @@ def plot_3d_motion(save_path, joints, title, figsize=(3, 3), fps=120, radius=3, 
         xz_plane.set_facecolor((0.8, 0.8, 0.8, 0.5))
         ax.add_collection3d(xz_plane)
 
+    joints = joints[:int(fps * 10)]
     if fps != 10:
         with torch.no_grad():
             input_tensor = torch.tensor(joints, dtype=torch.float32).permute(1,2,0)
@@ -117,7 +118,7 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
         [2, 1], [1, 15], [15, 17], [1, 16],
         [16, 18],
     ]
-
+    joints = joints[:int(fps*10)]
     if fps != 10:
         with torch.no_grad():
             input_tensor = torch.tensor(joints, dtype=torch.float32).permute(1,2,0)

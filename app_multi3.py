@@ -53,6 +53,7 @@ def action(translate, dance, random, prompt):
 
 
 if __name__ == "__main__":
+    mp.set_start_method('spawn')
     smpl_model = MySMPL("deps/body_models/smpl", gender="neutral", ext="pkl")
     demo = gr.Interface(
         action,

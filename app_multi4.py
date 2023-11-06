@@ -78,4 +78,4 @@ if __name__ == "__main__":
          gr.Textbox("0.0", label="guidance")],
         [gr.Video(format="mp4", autoplay=True, label=str(i), width=225, height=225) for i in range(4)],
     )
-    demo.launch(server_name='0.0.0.0', server_port=7869)
+    demo.launch(server_name='0.0.0.0', server_port=8019)

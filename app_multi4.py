@@ -22,7 +22,7 @@ def draw(render, mid, joints, video_name, prompt, fps):
         raise ValueError(f"render {render} not supported")
 
 
-def action(render, translate, dance, random, prompt, temperature, prompt2, guidance):
+def action(render, translate, dance, random, prompt, temperature, prompt2, translate2, guidance):
     temperature = float(temperature)
     guidance = float(guidance)
     the_uuid = str(uuid.uuid4())
@@ -39,7 +39,8 @@ def action(render, translate, dance, random, prompt, temperature, prompt2, guida
         ret_jsons = requests.post("http://10.18.97.62:8019/refinement/",
                                   json=ret_jsons, params={"temperature": temperature,
                                                           "text_condition": prompt if prompt2 == "" else prompt2,
-                                                          "text_guidance": guidance}).json()
+                                                          "text_guidance": guidance,
+                                                          "do_translation": translate2}).json()
     all_rotations = [
         np.frombuffer(binascii.a2b_base64(ret_json["rotations"]), dtype=ret_json["dtype"]).reshape(-1, 24 * 3)
         for ret_json in ret_jsons]
@@ -78,6 +79,7 @@ if __name__ == "__main__":
          gr.Textbox("A person is skipping rope.", label="prompt"),
          gr.Textbox("1.0", label="temperature"),
          gr.Textbox("", label="prompt2"),
+         gr.Checkbox(label="translate prompt2", value=False),
          gr.Textbox("2.5", label="guidance")],
         [gr.Video(format="mp4", autoplay=True, label=str(i), width=225, height=225) for i in range(4)],
     )

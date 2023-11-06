@@ -46,7 +46,8 @@ def action(render, translate, dance, random, temperature, prompt, guidance):
         np.frombuffer(binascii.a2b_base64(ret_json["root_positions"]), dtype=ret_json["dtype"]).reshape(-1, 3)
         for ret_json in ret_jsons]
     processes = []
-    for mid, rotations, root_pos, video_name, fps in zip([ret_json["mid"] for ret_json in ret_jsons], all_rotations,
+    for mid, rotations, root_pos, video_name, fps in zip([ret_json.get("mid", "") for ret_json in ret_jsons],
+                                                         all_rotations,
                                                          all_root_pos, video_names,
                                                          [ret_json["fps"] for ret_json in ret_jsons]):
         with torch.no_grad():
@@ -75,7 +76,7 @@ if __name__ == "__main__":
          gr.Checkbox(label="random", value=False),
          gr.Textbox("0.0", label="temperature"),
          gr.Textbox("A person is skipping rope.", label="prompt"),
-         gr.Textbox("0.0", label="guidance")],
+         gr.Textbox("1.0", label="guidance")],
         [gr.Video(format="mp4", autoplay=True, label=str(i), width=225, height=225) for i in range(4)],
     )
     demo.launch(server_name='0.0.0.0', server_port=8019)

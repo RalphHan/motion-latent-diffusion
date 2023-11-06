@@ -76,9 +76,9 @@ if __name__ == "__main__":
          gr.Checkbox(label="dance", value=False),
          gr.Checkbox(label="random", value=False),
          gr.Textbox("A person is skipping rope.", label="prompt"),
-         gr.Textbox("0.0", label="temperature"),
+         gr.Textbox("1.0", label="temperature"),
          gr.Textbox("", label="prompt2"),
-         gr.Textbox("1.0", label="guidance")],
+         gr.Textbox("2.5", label="guidance")],
         [gr.Video(format="mp4", autoplay=True, label=str(i), width=225, height=225) for i in range(4)],
     )
     demo.launch(server_name='0.0.0.0', server_port=8019)

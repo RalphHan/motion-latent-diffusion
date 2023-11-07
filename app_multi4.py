@@ -22,9 +22,8 @@ def draw(render, mid, joints, video_name, prompt, fps):
         raise ValueError(f"render {render} not supported")
 
 
-def action(render, translate, dance, random, prompt, temperature, prompt2, translate2, guidance):
-    temperature = float(temperature)
-    guidance = float(guidance)
+def action(render, translate, dance, random, prompt, creativity, prompt2, translate2):
+    creativity = float(creativity)
     the_uuid = str(uuid.uuid4())
     video_names = [f"results/gradio/{the_uuid}-{i}.mp4" for i in range(4)]
     params = {"prompt": prompt, "do_translation": translate,
@@ -35,11 +34,10 @@ def action(render, translate, dance, random, prompt, temperature, prompt2, trans
         params["regenerate"] = 1
     ret_jsons = requests.get("http://34.123.39.219:6399/angle/",
                              params=params).json()
-    if temperature:
+    if creativity:
         ret_jsons = requests.post("http://10.18.97.62:8019/refinement/",
-                                  json=ret_jsons, params={"temperature": temperature,
-                                                          "text_condition": prompt if prompt2 == "" else prompt2,
-                                                          "text_guidance": guidance,
+                                  json=ret_jsons, params={"creativity": creativity,
+                                                          **({"text_condition": prompt2} if prompt2 else {}),
                                                           "do_translation": translate2}).json()
     all_rotations = [
         np.frombuffer(binascii.a2b_base64(ret_json["rotations"]), dtype=ret_json["dtype"]).reshape(-1, 24 * 3)
@@ -77,10 +75,9 @@ if __name__ == "__main__":
          gr.Checkbox(label="dance", value=False),
          gr.Checkbox(label="random", value=False),
          gr.Textbox("A person is skipping rope.", label="prompt"),
-         gr.Textbox("1.0", label="temperature"),
+         gr.Textbox("1.0", label="creativity"),
          gr.Textbox("", label="prompt2"),
-         gr.Checkbox(label="translate prompt2", value=False),
-         gr.Textbox("2.5", label="guidance")],
+         gr.Checkbox(label="translate prompt2", value=False)],
         [gr.Video(format="mp4", autoplay=True, label=str(i), width=225, height=225) for i in range(4)],
     )
     demo.launch(server_name='0.0.0.0', server_port=8019)

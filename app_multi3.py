@@ -25,7 +25,7 @@ def action(translate, dance, random, prompt):
         params["style"] = "dance"
     if random:
         params["regenerate"] = 1
-    ret_jsons = requests.get("http://34.123.39.219:6399/angle/",
+    ret_jsons = requests.get("http://34.29.84.94:6399/angle/",
                              params=params).json()
     all_rotations = [
         np.frombuffer(binascii.a2b_base64(ret_json["rotations"]), dtype=ret_json["dtype"]).reshape(-1, 24*3)

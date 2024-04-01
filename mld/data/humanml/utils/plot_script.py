@@ -51,12 +51,13 @@ def plot_3d_motion(save_path, joints, title, figsize=(3, 3), fps=120, radius=3, 
         xz_plane.set_facecolor((0.8, 0.8, 0.8, 0.5))
         ax.add_collection3d(xz_plane)
 
+    joint_num = joints.shape[1]
     joints = joints[:int(fps * 10)]
     if fps != 10:
         with torch.no_grad():
-            input_tensor = torch.tensor(joints, dtype=torch.float32).permute(1,2,0)
-            output_tensor = torch.nn.functional.interpolate(input_tensor, scale_factor=10/fps, mode='linear')
-            joints = output_tensor.permute(2,0,1).numpy()
+            input_tensor = torch.tensor(joints, dtype=torch.float32).permute(1, 2, 0)
+            output_tensor = torch.nn.functional.interpolate(input_tensor, scale_factor=10 / fps, mode='linear')
+            joints = output_tensor.permute(2, 0, 1).numpy()
 
     data = joints.copy().reshape(len(joints), -1, 3)
     fig = plt.figure(figsize=figsize)
@@ -91,6 +92,11 @@ def plot_3d_motion(save_path, joints, title, figsize=(3, 3), fps=120, radius=3, 
                 linewidth = 2.0
             ax.plot3D(data[index, chain, 0], data[index, chain, 1], data[index, chain, 2], linewidth=linewidth,
                       color=color)
+            if joint_num == 48:
+                chain2 = [i + 24 for i in chain]
+                ax.plot3D(data[index, chain2, 0], data[index, chain2, 1], data[index, chain2, 2],
+                             linewidth=linewidth,
+                             color=color)
         plt.axis('off')
         ax.set_xticklabels([])
         ax.set_yticklabels([])
@@ -118,12 +124,12 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
         [2, 1], [1, 15], [15, 17], [1, 16],
         [16, 18],
     ]
-    joints = joints[:int(fps*10)]
+    joints = joints[:int(fps * 10)]
     if fps != 10:
         with torch.no_grad():
-            input_tensor = torch.tensor(joints, dtype=torch.float32).permute(1,2,0)
-            output_tensor = torch.nn.functional.interpolate(input_tensor, scale_factor=10/fps, mode='linear')
-            joints = output_tensor.permute(2,0,1).numpy()
+            input_tensor = torch.tensor(joints, dtype=torch.float32).permute(1, 2, 0)
+            output_tensor = torch.nn.functional.interpolate(input_tensor, scale_factor=10 / fps, mode='linear')
+            joints = output_tensor.permute(2, 0, 1).numpy()
 
     data = joints.copy().reshape(len(joints), -1, 3)
     fig = plt.figure(figsize=figsize)
@@ -158,7 +164,7 @@ def plot_openpose(save_path, joints, figsize=(3, 3), fps=120, radius=3):
                       data[index, mapping[my_index], 2], linewidth=linewidth,
                       color="#{:02x}{:02x}{:02x}".format(*[int(float(c) * 0.6) for c in color]))
         ax.scatter3D(data[index, mapping[1:15], 0], data[index, mapping[1:15], 1], data[index, mapping[1:15], 2],
-                     color=["#{:02x}{:02x}{:02x}".format(*color) for color in colors[:14]], marker=".",linewidths=4)
+                     color=["#{:02x}{:02x}{:02x}".format(*color) for color in colors[:14]], marker=".", linewidths=4)
         plt.axis('off')
         ax.set_xticklabels([])
         ax.set_yticklabels([])

@@ -133,10 +133,16 @@ def text2movies(query, duration_lower_bound):
     movies = []
     pickles = []
     for video in all_videos[:9]:
-        movies.append(gr.update(value="/home/user/priorMDM/dataset/inter-human/video/" + video["motion_id"] + ".mp4",
-                                label=video["text"][:100], visible=True))
-        pickles.append(gr.update(value="/home/user/priorMDM/dataset/inter-human/motions/" + video["motion_id"] + ".pkl",
-                                 visible=True))
+        if os.path.exists("/home/user/priorMDM/dataset/inter-human/video/" + video["motion_id"] + ".mp4"):
+            movies.append(
+                gr.update(value="/home/user/priorMDM/dataset/inter-human/video/" + video["motion_id"] + ".mp4",
+                          label=video["text"][:100], visible=True))
+            pickles.append(
+                gr.update(value="/home/user/priorMDM/dataset/inter-human/motions/" + video["motion_id"] + ".pkl",
+                          visible=True))
+        else:
+            movies.append(gr.update(value=None, label=None, visible=True))
+            pickles.append(gr.update(value=None, visible=True))
     return movies + pickles + [page, all_videos]
 
 
@@ -148,10 +154,16 @@ def set_page(mode, page, all_videos):
     movies = []
     pickles = []
     for video in all_videos[page * 9: (page + 1) * 9]:
-        movies.append(gr.update(value="/home/user/priorMDM/dataset/inter-human/video/" + video["motion_id"] + ".mp4",
-                                label=video["text"][:100], visible=True))
-        pickles.append(gr.update(value="/home/user/priorMDM/dataset/inter-human/motions/" + video["motion_id"] + ".pkl",
-                                 visible=True))
+        if os.path.exists("/home/user/priorMDM/dataset/inter-human/video/" + video["motion_id"] + ".mp4"):
+            movies.append(
+                gr.update(value="/home/user/priorMDM/dataset/inter-human/video/" + video["motion_id"] + ".mp4",
+                          label=video["text"][:100], visible=True))
+            pickles.append(
+                gr.update(value="/home/user/priorMDM/dataset/inter-human/motions/" + video["motion_id"] + ".pkl",
+                          visible=True))
+        else:
+            movies.append(gr.update(value=None, label=None, visible=True))
+            pickles.append(gr.update(value=None, visible=True))
     return movies + pickles + [page]
 
 
